@@ -15,25 +15,26 @@ main:
 
 ldr x0, = input_prompt
 bl printf
+
+sub sp, sp, 24
+ldr x0, = input_format
+mov x1, sp
+bl scanf
+mov x0, sp
 mov x1, 0
 
 revstr:
-	ldurb x0, [= input_format, x1]
-	bl printf
-	cmp x0, 0
-	b.ne rec
-	mov x1, 0
-	br x30
+	ldrb w1, [x0, x1]
+    #ldr x0, = output_format
+    stur w1, [sp, -4]
+    stur x0, [sp, 0]
+    ldr x0, = output_format
+    bl printf
+	add x1, x1, 1
+    ldur x0, [sp, 0]
+	cmp w1, 0
+	bne revstr
 
-rec:
-	sub sp, sp, 8
-	add x1, x1, 8
-	sturb x0, [sp]
-	bl revstr
-	ldurb x0, [sp]
-	bl printf
-	add sp, sp, 8
-	b exit
 
 # branch to this label on program completion
 exit:
@@ -41,3 +42,4 @@ exit:
     mov x8, 93
     svc 0
     ret
+
