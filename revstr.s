@@ -9,59 +9,110 @@ new_line_format: .ascii "\n"
 
 .global main
 
-# print each letter as they occur then print a new line and print off the stack in reverse order
-
 main:
 
-ldr x0, = input_prompt
+# print the input prompt
+ldr x0, =input_prompt
 bl printf
 
-sub sp, sp, 24
+# create space on the stack...
+sub sp, sp, 8
+# ...and zero it out
+stur xzr, [sp]
 
-ldr x0, = input_format
+# read the input string into the space on the stack
+ldr x0, =input_format
 mov x1, sp
 bl scanf
+
+# save input string address
 mov x0, sp
 mov x1, 0
 
+# begin printing
+bl revstr
+
+# reclaim initial stack space
+add sp, sp, 8
+
+# print a new line
+ldr x0, =new_line_format
+bl printf
+
+# exit the program
+b exit
+
 revstr:
 
-    sub sp, sp, 24
-    stur x30, [sp, 16]
-    stur x1, [sp, 8]
+    # create space on the stack for...
+    sub sp, sp, 16
+    # ...the return address...
+    stur x30, [sp, 8]
+    # ...and the input string address
     stur x0, [sp, 0]
-
-	ldrb w1, [x0]
+ 
+    #load a byte of the input string...
+    ldrb w1, [x0, 0]
+    # ...and check if it is null...
     cmp w1, 0
-    bne recstr
+    # ...and branch if false to rec
+    bne rec
 
-    ldr x0, = new_line_format
-	bl printf
+    # print a new line
+    ldr x0, =new_line_format
+    bl printf
 
-	ldur x30, [sp, 16]
+    # load return address
+    ldur x30, [sp, 8]
+
+    # reclaim stack space
+    add sp, sp, 16
+   
+    # branch to return address
     br x30
 
-recstr:
+
+rec:
+
+    # print the byte
+    ldr x0, =output_format
+    bl printf
     
-    ldr x0, = output_format
-    bl printf
-
-	ldur x30, [sp, 16]
-    ldur x1, [sp, 8]
+    # load return address...
+    ldur x30, [sp, 8]
+    # ...and input string address
     ldur x0, [sp, 0]
-    add sp, sp, 24
+
+    # increment input string address
     add x0, x0, 1
+
+    # recursively branch with link to revstr
     bl revstr
+    
+    # begin post-return recursive section:
 
-    ldur x30, [sp, 16]
-    ldur x1, [sp, 8]
+    # load return address...
+    ldur x30, [sp, 8]
+    # ...and input string address
     ldur x0, [sp, 0]
-    add sp, sp, 24
-    ldrb w1, [x0]
-    ldr x0, = output_format
-    bl printf
-    br x30
 
+    # load a byte of the input string (in reverse)
+    ldrb w1, [x0, 0]
+
+    # print the byte
+    ldr x0, =output_format
+    bl printf
+
+    # load return address...
+    ldur x30, [sp, 8]
+    # ...and input string address
+    ldur x0, [sp, 0]
+
+    # reclaim stack space
+    add sp, sp, 16
+
+    # branch to return address
+    br x30
 
 
 # branch to this label on program completion
